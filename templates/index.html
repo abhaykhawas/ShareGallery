@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <div class="container">
+        <div class="upload-img-container">
+            <input type="file" id="img">
+            <button id="upload">Upload</button>
+        </div>
+        
+        <h1>Images Gallery</h1>
+        <!-- <img src="/static/uploaded_image.png" alt="" width="50" height="50"> -->
+
+        <div id="imageGallery">
+        </div> 
+    </div>
+    
+</body>
+<script>
+    const upload_btn = document.getElementById('upload');
+    upload_btn.addEventListener('click', () => {
+        let img =  document.getElementById('img').files[0]
+        if (!img){
+            alert("No image is attached.")
+            return
+        }
+        const reader = new FileReader();
+            reader.onloadend = function () {
+                const base64Image = reader.result.split(',')[1]; // Remove the "data:image/*;base64," part
+
+                // Send the Base64-encoded image in JSON format
+                fetch('/', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        "imageFile": base64Image,
+                        "username": localStorage.getItem('username')
+                    }),
+                    headers: {
+                        "Content-type": "application/json; charset=UTF-8"
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message); // Show response message from the backend
+                    document.getElementById('img').value = null
+                    loadImages()
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            };
+            reader.readAsDataURL(img);
+    })
+    if (!localStorage.getItem('username')){
+        const username = prompt("Enter your username");
+    
+
+        fetch("/username", {
+            method: "POST",
+            body: JSON.stringify({
+                "username" : username
+            }),
+            headers: {
+                "Content-type": "application/json; charset=UTF-8"
+            }
+            }).then(() => {
+                console.log("SUCESSSSS")
+                localStorage.setItem('username', username)
+            });
+    }
+
+    function loadImages() {
+            fetch('/images', {
+                method: 'GET'
+            })
+            .then(response => response.json())
+            .then(data => {
+                const galleryDiv = document.getElementById('imageGallery');
+                galleryDiv.innerHTML = '';
+                console.log(data)
+
+                if (data.images && data.images.length > 0) {
+                    // Loop through the image filenames and display them
+                    data.images.forEach(image => {
+                        console.log(image)
+                        const imgElement = document.createElement('img');
+                        imgElement.src = `/static/${image}`;
+                        imgElement.style.maxWidth = '300px';
+                        imgElement.style.margin = '10px';
+                        galleryDiv.appendChild(imgElement);
+                    });
+                } else {
+                    galleryDiv.innerHTML = 'No images available.';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+        // Load images when the page loads
+        window.onload = loadImages;
+</script>
+</html>
