@@ -20,9 +20,7 @@ def index():
     if request.method == 'GET':
         return render_template('index.html')
     else:
-        print(request.data)
         data = request.get_json()
-        print(data)
         base64_image = data.get('imageFile')
         image_data = base64.b64decode(base64_image)
         username = data.get('username')
@@ -35,10 +33,7 @@ def index():
 
         f = open('data.json', 'r')
 
-        print(f, "checking")
         f = json.loads(f.read())
-
-        print(f)
 
         if username in f:
             f[username].append(f'{random_num}.png')
@@ -62,7 +57,6 @@ def index():
 @app.route('/username', methods=['POST'])
 def username():
     if request.method == 'POST':
-        print(json.loads(request.data))
         return "SUCCESS"
 
 @app.route('/images', methods=['GET'])
@@ -71,10 +65,16 @@ def get_images():
 
     file_names = [f for f in os.listdir(folder_path) if os.path.isfile(os.path.join(folder_path, f))]
 
-    print(file_names)
     return jsonify({'images': file_names}), 200
 
-
+@app.route('/delete', methods=['POST'])
+def delete():
+    img_id = json.loads(request.data)['image_id']
+    file_path = f'static/{img_id}.png'
+    if os.path.exists(file_path):
+        os.remove(file_path)
+        return "Cool"
+    return "Something went wrong"
 
 if __name__ == '__main__':
     app.debug = True
